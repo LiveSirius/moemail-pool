@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  auto-mail:
+    build: .
+    container_name: auto-mail
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - MOEMAIL_BASE=${MOEMAIL_BASE}
+      - MOEMAIL_KEY=${MOEMAIL_KEY}
+      - MOEMAIL_DOMAIN=${MOEMAIL_DOMAIN}
