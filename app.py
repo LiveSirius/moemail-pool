@@ -2,13 +2,34 @@ import os
 import time
 import re
 import asyncio
+import json
 from aiohttp import web, ClientSession
 
 API_BASE = os.getenv("MOEMAIL_BASE", "").rstrip("/")
 API_KEY = os.getenv("MOEMAIL_KEY", "")
 DOMAIN = os.getenv("MOEMAIL_DOMAIN", "")
 
-pool = []
+DATA_DIR = os.getenv("DATA_DIR", "/data")
+POOL_FILE = os.path.join(DATA_DIR, "pool.json")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+def load_pool():
+    if os.path.exists(POOL_FILE):
+        try:
+            with open(POOL_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_pool(p):
+    try:
+        with open(POOL_FILE, "w", encoding="utf-8") as f:
+            json.dump(p, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error saving pool: {e}")
+
+pool = load_pool()
 
 async def fetch_config():
     global DOMAIN
@@ -37,9 +58,11 @@ async def handle_get_email(request):
         new_mail = await generate_email()
         if new_mail:
             pool.append(new_mail)
+            save_pool(pool)
         else:
             return web.json_response({"error": "Failed to generate email"}, status=500)
     mail = pool.pop(0)
+    save_pool(pool)
     return web.json_response(mail)
 
 async def handle_get_code(request):
